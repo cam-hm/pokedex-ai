@@ -75,20 +75,32 @@ def show_home_view():
     gen_params = GENERATIONS[selected_gen]
 
     # Pokemon Grid
-    pokemon_list = get_pokemon_list(limit=gen_params['limit'], offset=gen_params['offset'])
-    
-    cols = st.columns(5) # 5 columns grid
-    for i, pokemon in enumerate(pokemon_list):
-        # Extract ID from URL for image
-        p_id = pokemon['url'].split('/')[-2]
-        p_name = pokemon['name'].title()
-        p_img = f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{p_id}.png"
+    with st.spinner(f"Loading {selected_gen}..."):
+        pokemon_list = get_pokemon_list(limit=gen_params['limit'], offset=gen_params['offset'])
         
-        with cols[i % 5]:
-            st.image(p_img, width=100)
-            if st.button(f"#{p_id} {p_name}", key=f"btn_{p_id}"):
-                navigate_to_detail(pokemon['name'])
-                st.rerun()
+        cols = st.columns(5) # 5 columns grid
+        for i, pokemon in enumerate(pokemon_list):
+            # Extract ID from URL for image
+            p_id = pokemon['url'].split('/')[-2]
+            p_name = pokemon['name'].title()
+            
+            # URLs
+            gif_url = f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/showdown/{p_id}.gif"
+            png_url = f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/{p_id}.png"
+            
+            with cols[i % 5]:
+                # Use HTML object tag for fallback (avoids React onerror issues)
+                st.markdown(f"""
+                    <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+                        <object data="{gif_url}" type="image/gif" width="100">
+                            <img src="{png_url}" width="100" />
+                        </object>
+                    </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button(f"#{p_id} {p_name}", key=f"btn_{p_id}"):
+                    navigate_to_detail(pokemon['name'])
+                    st.rerun()
 
 def show_detail_view():
     if st.button("← Back to Home"):
@@ -105,10 +117,11 @@ def show_detail_view():
         col1, col2 = st.columns([1, 2])
         
         with col1:
-            # Display Image
+            # Display Image (Static High Quality)
             sprite_url = data['sprites']['other']['official-artwork']['front_default']
             if not sprite_url:
                 sprite_url = data['sprites']['front_default']
+                
             st.image(sprite_url, use_column_width=True)
             
             # Audio (Cries)
