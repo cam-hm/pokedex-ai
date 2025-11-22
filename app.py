@@ -93,7 +93,68 @@ STAT_CONFIG = {
     "speed": {"color": "#E91E63", "name": "Speed"}
 }
 
+TYPE_ID_MAP = {
+    "normal": 1, "fighting": 2, "flying": 3, "poison": 4, "ground": 5, "rock": 6, "bug": 7,
+    "ghost": 8, "steel": 9, "fire": 10, "water": 11, "grass": 12, "electric": 13, "psychic": 14,
+    "ice": 15, "dragon": 16, "dark": 17, "fairy": 18
+}
+
 # --- Views ---
+
+@st.dialog("Type Effectiveness")
+def show_effectiveness_modal(types):
+    effectiveness = get_type_effectiveness(types)
+    
+    weaknesses = []
+    resistances = []
+    immunities = []
+    
+    for t, multiplier in effectiveness.items():
+        if multiplier > 1.0:
+            weaknesses.append((t, multiplier))
+        elif multiplier == 0.0:
+            immunities.append(t)
+        elif multiplier < 1.0:
+            resistances.append((t, multiplier))
+            
+    # Helper to render type badge
+    def render_type_badge(type_name, multiplier=None):
+        type_id = TYPE_ID_MAP.get(type_name, 1)
+        icon_url = f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-viii/sword-shield/{type_id}.png"
+        
+        suffix = ""
+        if multiplier is not None:
+            suffix = f" (x{int(multiplier) if multiplier.is_integer() else multiplier})"
+            
+        st.markdown(f"""
+            <div style="display: flex; align-items: center; margin-bottom: 5px;">
+                <img src="{icon_url}" height="20" style="margin-right: 8px;" />
+                <span>{type_name.title()}{suffix}</span>
+            </div>
+        """, unsafe_allow_html=True)
+
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.subheader("Weaknesses ❌")
+        if weaknesses:
+            for t, mult in weaknesses:
+                render_type_badge(t, mult)
+        else:
+            st.write("None")
+            
+    with col2:
+        st.subheader("Resistances 🛡️")
+        if resistances:
+            for t, mult in resistances:
+                render_type_badge(t, mult)
+        else:
+            st.write("None")
+            
+    if immunities:
+        st.subheader("Immunities 🚫")
+        for t in immunities:
+            render_type_badge(t)
 
 def show_home_view():
     st.title("🔴 Minimal Pokedex")
@@ -192,33 +253,24 @@ def show_detail_view():
                 description = description.replace('\n', ' ').replace('\f', ' ')
                 st.info(description)
 
-            types = [t['type']['name'] for t in data['types']]
-            st.write(f"**Type:** {', '.join([t.title() for t in types])}")
+            # Type Icons
+            st.write("**Type:**")
+            type_cols = st.columns(len(data['types']) + 2) # Extra columns for spacing
+            for i, t in enumerate(data['types']):
+                type_name = t['type']['name']
+                type_id = TYPE_ID_MAP.get(type_name, 1)
+                icon_url = f"https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/types/generation-viii/sword-shield/{type_id}.png"
+                with type_cols[i]:
+                    st.image(icon_url, width=100)
+            
             st.write(f"**Height:** {data['height']/10} m")
             st.write(f"**Weight:** {data['weight']/10} kg")
             
-            # Type Effectiveness
-            st.subheader("Type Effectiveness")
-            effectiveness = get_type_effectiveness(types)
-            
-            weaknesses = []
-            resistances = []
-            immunities = []
-            
-            for t, multiplier in effectiveness.items():
-                if multiplier > 1.0:
-                    weaknesses.append(f"{t.title()} (x{int(multiplier) if multiplier.is_integer() else multiplier})")
-                elif multiplier == 0.0:
-                    immunities.append(t.title())
-                elif multiplier < 1.0:
-                    resistances.append(f"{t.title()} (x{multiplier})")
-            
-            if weaknesses:
-                st.write(f"**Weakness:** {', '.join(weaknesses)}")
-            if resistances:
-                st.write(f"**Resistance:** {', '.join(resistances)}")
-            if immunities:
-                st.write(f"**Immunity:** {', '.join(immunities)}")
+            # Type Effectiveness Button
+            st.write("") # Spacer
+            if st.button("🛡️ View Type Effectiveness"):
+                types = [t['type']['name'] for t in data['types']]
+                show_effectiveness_modal(types)
 
             # Stats
             st.subheader("Base Stats")
