@@ -51,7 +51,7 @@ def show_detail_view():
                 if not sprite_url:
                     sprite_url = data['sprites']['front_default']
                 
-            st.image(sprite_url, use_column_width=True)
+            st.image(sprite_url, use_container_width=True)
             
             # Audio (Cries)
             cries = data.get('cries', {})
