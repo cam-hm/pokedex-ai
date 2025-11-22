@@ -173,6 +173,48 @@ def show_detail_view():
                         if st.button(evo_name, key=f"evo_{evo_id}"):
                             navigate_to_detail(evo['name'])
                             st.rerun()
+        
+        # AI Chat Section
+        st.divider()
+        st.subheader("💬 Chat with AI about " + data['name'].title())
+        st.caption("Ask me anything about this Pokemon!")
+        
+        # Initialize chat history for this Pokemon
+        chat_key = f"chat_{data['name']}"
+        if chat_key not in st.session_state:
+            st.session_state[chat_key] = []
+        
+        # Display chat history
+        for message in st.session_state[chat_key]:
+            with st.chat_message(message["role"]):
+                st.write(message["content"])
+        
+        # Chat input
+        if user_input := st.chat_input("Ask me anything about this Pokemon..."):
+            # Add user message to history
+            st.session_state[chat_key].append({"role": "user", "content": user_input})
+            
+            # Display user message
+            with st.chat_message("user"):
+                st.write(user_input)
+            
+            # Get AI response
+            with st.chat_message("assistant"):
+                with st.spinner("Thinking..."):
+                    from src.services.ai_service import PokemonChatbot
+                    chatbot = PokemonChatbot()
+                    ai_response = chatbot.chat(
+                        pokemon_name=data['name'],
+                        pokemon_data=data,
+                        user_message=user_input,
+                        chat_history=st.session_state[chat_key]
+                    )
+                    st.write(ai_response)
+            
+            # Add AI response to history
+            st.session_state[chat_key].append({"role": "assistant", "content": ai_response})
+            st.rerun()
+            
     else:
         st.error("Pokemon not found!")
         if st.button("Go Back"):
