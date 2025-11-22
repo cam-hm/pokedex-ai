@@ -78,3 +78,88 @@ def get_evolution_chain(species_url):
     
     parse_evolution(chain)
     return evo_list
+
+
+def get_abilities_info(pokemon_data):
+    """
+    Extract abilities from Pokemon data
+    
+    Args:
+        pokemon_data (dict): Pokemon data
+        
+    Returns:
+        dict: {'normal': [], 'hidden': None or str}
+    """
+    if not pokemon_data:
+        return {'normal': [], 'hidden': None}
+    
+    abilities = pokemon_data.get('abilities', [])
+    normal_abilities = []
+    hidden_ability = None
+    
+    for ability in abilities:
+        ability_name = ability['ability']['name'].replace('-', ' ').title()
+        if ability['is_hidden']:
+            hidden_ability = ability_name
+        else:
+            normal_abilities.append(ability_name)
+    
+    return {'normal': normal_abilities, 'hidden': hidden_ability}
+
+
+def get_gender_ratio(species_data):
+    """
+    Calculate gender ratio from species data
+    
+    Args:
+        species_data (dict): Species data
+        
+    Returns:
+        dict: {'male': float, 'female': float} or {'genderless': True}
+    """
+    if not species_data:
+        return {'genderless': True}
+    
+    gender_rate = species_data.get('gender_rate', -1)
+    
+    if gender_rate == -1:
+        return {'genderless': True}
+    
+    # gender_rate is in eighths (0-8)
+    # 0 = 100% male, 8 = 100% female
+    female_ratio = (gender_rate / 8) * 100
+    male_ratio = 100 - female_ratio
+    
+    return {'male': male_ratio, 'female': female_ratio}
+
+
+def get_capture_rate(species_data):
+    """
+    Get capture rate from species data
+    
+    Args:
+        species_data (dict): Species data
+        
+    Returns:
+        int: Capture rate (0-255, higher = easier)
+    """
+    if not species_data:
+        return 0
+    
+    return species_data.get('capture_rate', 0)
+
+
+def get_base_happiness(species_data):
+    """
+    Get base happiness from species data
+    
+    Args:
+        species_data (dict): Species data
+        
+    Returns:
+        int: Base happiness (0-255)
+    """
+    if not species_data:
+        return 0
+    
+    return species_data.get('base_happiness', 0)

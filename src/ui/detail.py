@@ -5,7 +5,15 @@ Pokemon detail page with stats, description, varieties, and evolution chain
 import streamlit as st
 from src.config.constants import STAT_CONFIG
 from src.api.pokeapi_client import get_pokemon_data, get_species_data
-from src.services.pokemon_service import get_pokemon_description, get_pokemon_varieties, get_evolution_chain
+from src.services.pokemon_service import (
+    get_pokemon_description, 
+    get_pokemon_varieties, 
+    get_evolution_chain,
+    get_abilities_info,
+    get_gender_ratio,
+    get_capture_rate,
+    get_base_happiness
+)
 from src.services.type_service import get_type_icon_url
 from src.ui.components.modals import show_effectiveness_modal
 
@@ -82,6 +90,21 @@ def show_detail_view():
             
             st.write(f"**Height:** {data['height']/10} m")
             st.write(f"**Weight:** {data['weight']/10} kg")
+            
+            # Abilities
+            abilities_info = get_abilities_info(data)
+            abilities_text = ", ".join(abilities_info['normal'])
+            if abilities_info['hidden']:
+                abilities_text += f" | {abilities_info['hidden']} (Hidden)"
+            st.write(f"**Abilities:** {abilities_text}")
+            
+            # Gender Ratio (from species data)
+            if species_data:
+                gender_ratio = get_gender_ratio(species_data)
+                if gender_ratio.get('genderless'):
+                    st.write("**Gender:** Genderless")
+                else:
+                    st.write(f"**Gender:** ♂ {gender_ratio['male']:.1f}% / ♀ {gender_ratio['female']:.1f}%")
             
             # Type Effectiveness Button
             st.write("")  # Spacer
