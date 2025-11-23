@@ -146,7 +146,7 @@ Guidelines:
                 model="llama-3.3-70b-versatile",
                 messages=[{"role": "system", "content": system_prompt}],
                 temperature=0.5,
-                max_tokens=600
+                max_tokens=1500
             )
             return response.choices[0].message.content
         except Exception as e:
