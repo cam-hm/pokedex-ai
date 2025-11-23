@@ -159,11 +159,81 @@ def show_battle_view():
     if st.button("🚀 Analyze Matchup", type="primary", use_container_width=True):
         if p1_data and p2_data:
             with st.spinner("🤖 AI is analyzing the battle..."):
-                analysis = st.session_state.chatbot.analyze_matchup(
+                analysis, win_probability = st.session_state.chatbot.analyze_matchup(
                     p1_name, p1_data, p1_moves, p1_item, p1_stats, p1_nature,
                     p2_name, p2_data, p2_moves, p2_item, p2_stats, p2_nature
                 )
+                
+                # Visual Storytelling Section
                 st.markdown("### 📊 Battle Analysis")
+                
+                # 1. Radar Chart (Stats Comparison)
+                import plotly.graph_objects as go
+                
+                categories = ['HP', 'Attack', 'Defense', 'Sp. Atk', 'Sp. Def', 'Speed']
+                p1_values = [p1_stats['hp'], p1_stats['attack'], p1_stats['defense'], 
+                             p1_stats['special-attack'], p1_stats['special-defense'], p1_stats['speed']]
+                p2_values = [p2_stats['hp'], p2_stats['attack'], p2_stats['defense'],
+                             p2_stats['special-attack'], p2_stats['special-defense'], p2_stats['speed']]
+                
+                radar_fig = go.Figure()
+                
+                radar_fig.add_trace(go.Scatterpolar(
+                    r=p1_values,
+                    theta=categories,
+                    fill='toself',
+                    name=p1_name.title(),
+                    line_color='#FF6B6B'
+                ))
+                
+                radar_fig.add_trace(go.Scatterpolar(
+                    r=p2_values,
+                    theta=categories,
+                    fill='toself',
+                    name=p2_name.title(),
+                    line_color='#4ECDC4'
+                ))
+                
+                radar_fig.update_layout(
+                    polar=dict(radialaxis=dict(visible=True, range=[0, max(max(p1_values), max(p2_values)) + 20])),
+                    showlegend=True,
+                    title="Stats Comparison (Lv. 50)",
+                    height=400
+                )
+                
+                # 2. Win Rate Gauge
+                gauge_fig = go.Figure(go.Indicator(
+                    mode="gauge+number",
+                    value=win_probability,
+                    domain={'x': [0, 1], 'y': [0, 1]},
+                    title={'text': f"{p1_name.title()}'s Win Probability"},
+                    gauge={
+                        'axis': {'range': [None, 100]},
+                        'bar': {'color': "darkblue"},
+                        'steps': [
+                            {'range': [0, 40], 'color': "#FFB6B6"},
+                            {'range': [40, 60], 'color': "#FFF4B0"},
+                            {'range': [60, 100], 'color': "#B6FFB6"}
+                        ],
+                        'threshold': {
+                            'line': {'color': "red", 'width': 4},
+                            'thickness': 0.75,
+                            'value': 50
+                        }
+                    }
+                ))
+                
+                gauge_fig.update_layout(height=300)
+                
+                # Display Charts
+                chart_col1, chart_col2 = st.columns(2)
+                with chart_col1:
+                    st.plotly_chart(radar_fig, use_container_width=True)
+                with chart_col2:
+                    st.plotly_chart(gauge_fig, use_container_width=True)
+                
+                # 3. AI Analysis Text
+                st.markdown("---")
                 st.markdown(analysis)
         else:
             st.error("Please select both Pokemon to analyze.")
