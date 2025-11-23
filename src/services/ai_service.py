@@ -82,32 +82,38 @@ Guidelines:
                 return f"⚠️ AI service authentication failed. Please check the Groq API key in settings."
             return f"Sorry, I encountered an error: {error_msg}. Please try again!"
 
-    def analyze_matchup(self, p1_name, p1_data, p2_name, p2_data):
+    def analyze_matchup(self, p1_name, p1_data, p1_moves, p1_item, p2_name, p2_data, p2_moves, p2_item):
         """
-        Analyze battle matchup between two Pokemon
+        Analyze battle matchup between two Pokemon with Moves and Items
         """
         # Helper to format stats
-        def format_stats(data):
+        def format_stats(data, moves, item):
             stats = {s['stat']['name']: s['base_stat'] for s in data.get('stats', [])}
             types = [t['type']['name'] for t in data.get('types', [])]
             abilities = [a['ability']['name'] for a in data.get('abilities', [])]
+            
+            moves_str = ", ".join(moves) if moves else "Standard Competitive Set (AI Prediction)"
+            item_str = item if item and item != "None" else "Standard Competitive Item (AI Prediction)"
+            
             return f"""
             Types: {', '.join(types)}
             Abilities: {', '.join(abilities)}
             Stats: HP={stats.get('hp')}, Atk={stats.get('attack')}, Def={stats.get('defense')}, 
                    SpA={stats.get('special-attack')}, SpD={stats.get('special-defense')}, Spd={stats.get('speed')}
+            Held Item: {item_str}
+            Moveset: {moves_str}
             """
 
         context = f"""
         POKEMON 1 (USER): {p1_name.upper()}
-        {format_stats(p1_data)}
+        {format_stats(p1_data, p1_moves, p1_item)}
 
         POKEMON 2 (OPPONENT): {p2_name.upper()}
-        {format_stats(p2_data)}
+        {format_stats(p2_data, p2_moves, p2_item)}
         """
 
         system_prompt = f"""You are a world-class Competitive Pokemon VGC/Smogon Analyst.
-        Analyze the matchup between {p1_name} and {p2_name} in extreme detail.
+        Analyze the matchup between {p1_name} and {p2_name} in extreme detail, CONSIDERING THE SPECIFIC MOVES AND ITEMS PROVIDED.
         
         DATA:
         {context}
@@ -115,25 +121,22 @@ Guidelines:
         OUTPUT FORMAT (Use Markdown):
         
         ### 1. 📊 Matchup Overview
-        Briefly describe the dynamic (e.g., "Glass Cannon vs Wall", "Speed Tie", "Type Mismatch").
+        Briefly describe the dynamic. Mention how the **Held Items** affect the matchup (e.g., Choice Scarf speed control, Life Orb damage).
         
         ### 2. ⚡ Speed & Turn Order
-        - Who moves first? (Compare Speed stats).
-        - Does the slower Pokemon need a **Choice Scarf** or **Tailwind** to outspeed?
+        - Who moves first? (Calculate actual speed with Item/Nature/EVs assumptions).
+        - Does **{p1_item}** or **{p2_item}** change the turn order?
         
         ### 3. 🛡️ Type Interaction
         - Analyze Weaknesses/Resistances.
-        - Mention any 4x weaknesses or Immunities.
         
-        ### 4. ⚔️ Damage Potential (Hypothetical)
-        - Can {p1_name} **OHKO** (One-Hit KO) {p2_name}?
-        - Is {p2_name} bulky enough to survive and counter-attack?
-        - Which stat should {p1_name} target (Defense or Sp. Def)?
+        ### 4. ⚔️ Damage Potential
+        - Analyze the specific moves provided: {', '.join(p1_moves) if p1_moves else 'Standard Moves'} vs {', '.join(p2_moves) if p2_moves else 'Standard Moves'}.
+        - Can {p1_name} OHKO {p2_name} with its specific moves?
         
         ### 5. 🧠 Strategy for {p1_name} (User)
-        - **Recommended Moves:** List 2-3 best moves to use.
-        - **Ideal Held Item:** Suggest an item (e.g., Focus Sash, Life Orb, Leftovers).
-        - **Win Condition:** What needs to happen for {p1_name} to win?
+        - How to use the selected moveset effectively.
+        - Win Condition based on the current loadout.
         
         ### 6. 🔮 Final Verdict
         - **Winning Probability:** {p1_name}'s win chance %.

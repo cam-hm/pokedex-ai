@@ -1,6 +1,7 @@
 import streamlit as st
 from src.api.pokeapi_client import get_all_pokemon_names, get_pokemon_data
 from src.services.ai_service import PokemonChatbot
+from src.config.items import COMPETITIVE_ITEMS
 
 def show_battle_view():
     st.title("⚔️ AI Battle Analyzer")
@@ -62,19 +63,43 @@ def show_battle_view():
                     st.write(f"✨ **SpA:** {stats.get('special-attack')}")
                     st.write(f"🔰 **SpD:** {stats.get('special-defense')}")
                     st.write(f"💨 **Spd:** {stats.get('speed')}")
+
+                # 3. Moves & Items
+                st.markdown("---")
+                all_moves = [m['move']['name'] for m in p_data['moves']]
+                selected_moves = st.multiselect(
+                    "Select Moves (Max 4)", 
+                    all_moves, 
+                    max_selections=4,
+                    key=f"moves_{key_suffix}"
+                )
                 
-            return p_name, p_data
+                selected_item = st.selectbox(
+                    "Held Item",
+                    COMPETITIVE_ITEMS,
+                    key=f"item_{key_suffix}"
+                )
+                
+            else:
+                selected_moves = []
+                selected_item = "None"
+                
+            return p_name, p_data, selected_moves, selected_item
 
     # Render both cards
-    p1_name, p1_data = render_battle_card(col1, "My Pokemon", "1", all_pokemon.index("charizard") if "charizard" in all_pokemon else 0)
-    p2_name, p2_data = render_battle_card(col2, "Opponent", "2", all_pokemon.index("blastoise") if "blastoise" in all_pokemon else 1)
+    # Render both cards
+    p1_name, p1_data, p1_moves, p1_item = render_battle_card(col1, "My Pokemon", "1", all_pokemon.index("charizard") if "charizard" in all_pokemon else 0)
+    p2_name, p2_data, p2_moves, p2_item = render_battle_card(col2, "Opponent", "2", all_pokemon.index("blastoise") if "blastoise" in all_pokemon else 1)
 
     st.markdown("---")
 
     if st.button("🚀 Analyze Matchup", type="primary", use_container_width=True):
         if p1_data and p2_data:
             with st.spinner("🤖 AI is analyzing the battle..."):
-                analysis = st.session_state.chatbot.analyze_matchup(p1_name, p1_data, p2_name, p2_data)
+                analysis = st.session_state.chatbot.analyze_matchup(
+                    p1_name, p1_data, p1_moves, p1_item,
+                    p2_name, p2_data, p2_moves, p2_item
+                )
                 st.markdown("### 📊 Battle Analysis")
                 st.markdown(analysis)
         else:
