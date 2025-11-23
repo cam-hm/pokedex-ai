@@ -155,6 +155,13 @@ Guidelines:
                 temperature=0.5,
                 max_tokens=1500
             )
-            return response.choices[0].message.content
+            analysis_text = response.choices[0].message.content
+            
+            # Extract win probability using regex
+            import re
+            win_prob_match = re.search(r'Winning Probability[:\s]*(\d+)%', analysis_text, re.IGNORECASE)
+            win_probability = int(win_prob_match.group(1)) if win_prob_match else 50  # Default to 50% if not found
+            
+            return analysis_text, win_probability
         except Exception as e:
-            return f"Error analyzing matchup: {str(e)}"
+            return f"Error analyzing matchup: {str(e)}", 50
